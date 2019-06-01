@@ -26,9 +26,11 @@ ASTEROID_IMG_PATH = ASSETS_DIR + "asteroid.png"
 BULLET_IMG_PATH = ASSETS_DIR + "bullet.png"
 EXPLOSION_IMG_PATHS = [ASSETS_DIR+"explosions/regularExplosion0%d.png" % i for i in range(9)]
 
-# infoObject = pygame.display.Info()
-SCREEN_WIDTH = 700
-SCREEN_HEIGHT = 700
+infoObject = pygame.display.Info()
+SCREEN_WIDTH = infoObject.current_w
+SCREEN_HEIGHT = infoObject.current_h
+# SCREEN_WIDTH = 700
+# SCREEN_HEIGHT = 700
 screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT], RESIZABLE)
 pygame.display.set_caption("Spaceship Game")
 background = pygame.image.load(BACKGROUND_IMG_PATH)
@@ -93,24 +95,14 @@ def menu():
                     return False
 
 
-class Block(pygame.sprite.Sprite):
+class Player(pygame.sprite.Sprite):
 
-    def __init__(self, image):
+    def __init__(self, image, position):
         super().__init__()
 
         self.image = pygame.image.load(image).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (SCREEN_WIDTH//20, SCREEN_WIDTH//20 * 7 // 4))
         self.rect = self.image.get_rect()
-        self.width = self.image.get_width()
-        self.height = self.image.get_height()
-
-    def update(self):
-        raise NotImplementedError("This function is meant to be implemented in the subclass")
-
-
-class Player(Block):
-
-    def __init__(self, image, position):
-        Block.__init__(self, image)
 
         self.rect.center = position
         self.original_image = self.image
@@ -127,15 +119,19 @@ class Player(Block):
             self.rect = self.image.get_rect(center=self.rect.center)
 
 
-class Asteroid(Block):
+class Asteroid(pygame.sprite.Sprite):
 
     def __init__(self, image, x, y, angle):
-        Block.__init__(self, image)
+        super().__init__()
+        self.image = pygame.image.load(image).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (SCREEN_WIDTH // 25, SCREEN_WIDTH // 25))
+        self.rect = self.image.get_rect()
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+
         self.vel = Vector2(np.random.normal(size=1, loc=3, scale=1), np.random.normal(size=1, loc=3, scale=1))
         self.rect.x = x
         self.rect.y = y
-        # self.vel.rotate_ip(np.random.normal(size=1, loc=angle, scale=angle/2))
-        # self.vel.rotate_ip(-angle+270)
         self.vel.rotate_ip(random.randrange(0, 360))
 
     def update(self):
@@ -146,10 +142,15 @@ class Asteroid(Block):
             self.kill()
 
 
-class Bullet(Block):
+class Bullet(pygame.sprite.Sprite):
 
     def __init__(self, image, player):
-        Block.__init__(self, image)
+        super().__init__()
+
+        self.image = pygame.image.load(image).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (SCREEN_WIDTH // 120, SCREEN_WIDTH // 120 * 18 // 10))
+        self.rect = self.image.get_rect()
+
         self.vel = Vector2(0, -8)
         self.rect.center = player.rect.center
         self.original_image = self.image
@@ -301,7 +302,7 @@ asteroid_list = pygame.sprite.Group()
 bullet_list = pygame.sprite.Group()
 explosion = pygame.sprite.Group()
 
-player = Player(SPACESHIP_IMG_PATH, (SCREEN_WIDTH/2, SCREEN_HEIGHT-100))
+player = Player(SPACESHIP_IMG_PATH, (SCREEN_WIDTH/2, SCREEN_HEIGHT/22*20))
 all_sprites_list.add(player)
 space_shooter = SpaceshipShooter(player, all_sprites_list, asteroid_list, bullet_list)
 
