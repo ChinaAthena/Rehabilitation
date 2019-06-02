@@ -1,7 +1,6 @@
 import pygame
 from pygame.math import Vector2
 from pygame.locals import *
-import random
 import numpy as np
 import math
 
@@ -18,7 +17,6 @@ ORANGE_RED = (255, 69, 0)
 GOLD = (255, 215, 0)
 
 pygame.init()
-8
 ASSETS_DIR = "../assets/"
 BACKGROUND_IMG_PATH = ASSETS_DIR + "background.png"
 SPACESHIP_IMG_PATH = ASSETS_DIR + "spaceship.png"
@@ -125,6 +123,7 @@ class Asteroid(pygame.sprite.Sprite):
 
     def __init__(self, image, x, y, angle):
         super().__init__()
+
         self.image = pygame.image.load(image).convert_alpha()
         self.image = pygame.transform.scale(self.image, (SCREEN_WIDTH // 25, SCREEN_WIDTH // 25))
         self.rect = self.image.get_rect()
