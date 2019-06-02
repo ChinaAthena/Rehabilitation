@@ -7,18 +7,18 @@ import math
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
-Bright_RED = (255, 0, 0)
-Bright_Green = (0, 255, 0)
+BRIGHT_RED = (255, 0, 0)
+BRIGHT_GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 128, 0)
 MAROON = (128, 0, 0)
-Bright_Yellow = (255, 255, 0)
-Bright_Orange = (255, 165, 0)
-Orange_Red = (255, 69, 0)
+BRIGHT_YELLOW = (255, 255, 0)
+BRIGHT_ORANGE = (255, 165, 0)
+ORANGE_RED = (255, 69, 0)
 GOLD = (255, 215, 0)
 
 pygame.init()
-
+8
 ASSETS_DIR = "../assets/"
 BACKGROUND_IMG_PATH = ASSETS_DIR + "background.png"
 SPACESHIP_IMG_PATH = ASSETS_DIR + "spaceship.png"
@@ -26,11 +26,11 @@ ASTEROID_IMG_PATH = ASSETS_DIR + "asteroid.png"
 BULLET_IMG_PATH = ASSETS_DIR + "bullet.png"
 EXPLOSION_IMG_PATHS = [ASSETS_DIR+"explosions/regularExplosion0%d.png" % i for i in range(9)]
 
-infoObject = pygame.display.Info()
-SCREEN_WIDTH = infoObject.current_w
-SCREEN_HEIGHT = infoObject.current_h
-# SCREEN_WIDTH = 700
-# SCREEN_HEIGHT = 700
+# infoObject = pygame.display.Info()
+# SCREEN_WIDTH = infoObject.current_w
+# SCREEN_HEIGHT = infoObject.current_h
+SCREEN_WIDTH = 700
+SCREEN_HEIGHT = 700
 screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT], RESIZABLE)
 pygame.display.set_caption("Spaceship Game")
 background = pygame.image.load(BACKGROUND_IMG_PATH)
@@ -55,7 +55,7 @@ def create_button(message, x, y, width, height, inactive_color, active_color):
     else:
         pygame.draw.rect(screen, inactive_color, (x, y, width, height))
 
-    small_text = pygame.font.SysFont("serif", 40)
+    small_text = pygame.font.SysFont("serif", height//3 * 2)
     text_surf, text_rect = text_objects(message, small_text, WHITE)
     text_rect.center = ((x + (width / 2)), (y + (height / 2)))
     screen.blit(text_surf, text_rect)
@@ -77,13 +77,15 @@ def menu():
                     pygame.quit()
                     quit()
 
-            large_text = pygame.font.SysFont("serif", 80)
+            large_text = pygame.font.SysFont("serif", SCREEN_WIDTH//10)
             text_surf, text_rect = text_objects("Spaceship Shooter", large_text, BLACK)
             text_rect.center = ((SCREEN_WIDTH / 2), (SCREEN_HEIGHT / 2))
             screen.blit(text_surf, text_rect)
 
-            button_play = create_button("Go!", SCREEN_WIDTH/5*2, SCREEN_HEIGHT/3*2, 100, 50, GREEN, Bright_Green)
-            button_quit = create_button("Quit :(", SCREEN_WIDTH/5*2.5, SCREEN_HEIGHT/3*2, 100, 50, MAROON, Bright_RED)
+            button_play = create_button("Go!", SCREEN_WIDTH / 7 * 2, SCREEN_HEIGHT / 3 * 2, SCREEN_WIDTH//7,
+                                        SCREEN_HEIGHT//20, GREEN, BRIGHT_GREEN)
+            button_quit = create_button("Quit :(", SCREEN_WIDTH / 7 * 4, SCREEN_HEIGHT / 3 * 2, SCREEN_WIDTH//7,
+                                        SCREEN_HEIGHT//20, MAROON, BRIGHT_RED)
 
             pygame.display.update()
             clock.tick(20)
@@ -129,10 +131,10 @@ class Asteroid(pygame.sprite.Sprite):
         self.width = self.image.get_width()
         self.height = self.image.get_height()
 
-        self.vel = Vector2(np.random.normal(size=1, loc=3, scale=1), np.random.normal(size=1, loc=3, scale=1))
+        self.vel = Vector2(0, -np.random.normal(size=1, loc=3, scale=1))
         self.rect.x = x
         self.rect.y = y
-        self.vel.rotate_ip(random.randrange(0, 360))
+        self.vel.rotate_ip(-player.angle + 270)
 
     def update(self):
         self.rect = self.rect.move(self.vel)
@@ -151,7 +153,7 @@ class Bullet(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (SCREEN_WIDTH // 120, SCREEN_WIDTH // 120 * 18 // 10))
         self.rect = self.image.get_rect()
 
-        self.vel = Vector2(0, -8)
+        self.vel = Vector2(0, -6)
         self.rect.center = player.rect.center
         self.original_image = self.image
         self.image = pygame.transform.rotate(self.original_image, player.angle - 90)
@@ -205,9 +207,9 @@ class SpaceshipShooter:
         screen.blit(pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
         self.all_sprites_list.draw(screen)
 
-        my_font = pygame.font.SysFont("serif", 32)
+        my_font = pygame.font.SysFont("serif", SCREEN_WIDTH//30)
         score_text, score_rect = text_objects("Score: {0}".format(self.score), my_font, WHITE)
-        score_rect.center = (SCREEN_WIDTH/20, SCREEN_HEIGHT/25)
+        score_rect.center = (SCREEN_WIDTH/15, SCREEN_HEIGHT/30)
         screen.blit(score_text, score_rect)
 
         pygame.display.flip()
