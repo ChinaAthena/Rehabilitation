@@ -92,6 +92,31 @@ def menu(screen, screen_width, screen_height, headline):
                     return False
 
 
+def pause(screen_width, screen_height):
+
+    paused = True
+
+    while paused:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit_game()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_c:
+                    paused = False
+
+                elif event.key == pygame.K_q:
+                    quit_game()
+
+        screen.fill(WHITE)
+
+        larger_font = pygame.font.SysFont("serif", screen_width // 10)
+        display_text("Paused", larger_font, BLACK, (screen_width / 2), (screen_height / 2))
+        smaller_font = pygame.font.SysFont("serif", screen_width // 30)
+        display_text("Press C to continue or Q to quit.", smaller_font, BLACK, (screen_width / 4), (screen_height / 4))
+        pygame.display.update()
+
+
 class Player(pygame.sprite.Sprite):
 
     def __init__(self, player_image, center):
@@ -122,15 +147,13 @@ class Player(pygame.sprite.Sprite):
 
 class Asteroid(pygame.sprite.Sprite):
 
-    def __init__(self, x, y, angle, screen_width, screen_height, asteroid_image):
+    def __init__(self, center, vel, angle, screen_width, screen_height, asteroid_image):
         super().__init__()
 
         self.image = asteroid_image.copy()
-        self.rect = self.image.get_rect(center=(x, y))
+        self.rect = self.image.get_rect(center=center)
+        self.vel = vel
         self.angle = angle
-
-        self.vel = Vector2(0, -np.random.normal(size=1, loc=3, scale=1))
-        self.vel.rotate_ip(-self.angle + 270)
 
         self.boundary_w = screen_width
         self.boundary_h = screen_height
@@ -142,9 +165,11 @@ class Asteroid(pygame.sprite.Sprite):
            or self.rect.center[1] > self.boundary_h or self.rect.center[1] < 0:
             self.kill()
 
-    def redraw(self, new_image):
-        self.image = pygame.transform.rotate(new_image.copy(), self.angle - 90)
-        self.rect = self.image.get_rect(center=self.rect.center)
+    def redraw(self, new_image, new_vel, new_screen_width, new_screen_height):
+        self.image = new_image.copy()
+        self.vel = new_vel
+        self.boundary_w = new_screen_width
+        self.boundary_h = new_screen_height
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -166,8 +191,6 @@ class Bullet(pygame.sprite.Sprite):
 
     def redraw(self, new_image, new_vel):
         self.image = pygame.transform.rotate(new_image.copy(), self.angle - 90)
-        self.rect = self.image.get_rect(center=self.rect.center)
-
         self.vel = Vector2(0, new_vel)
         self.vel.rotate_ip(-self.angle + 90)
 
@@ -193,54 +216,92 @@ class Explosion(pygame.sprite.Sprite):
 
 class SpaceshipShooter:
 
-    def __init__(self, screen, screen_width, screen_height, player, all_sprites_list, asteroid_list, bullet_list, bullet_image, asteroid_image):
+    def __init__(self, screen, player):
         self.screen = screen
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        
-        self.bullet_image = bullet_image
-        self.asteroid_image = asteroid_image
+
+        self.asteroid_image = pygame.transform.scale(pygame.image.load(ASTEROID_IMG_PATH).convert_alpha(),
+                                                     (self.screen_width // 25, self.screen_width // 25))
+        self.bullet_image = pygame.transform.scale(pygame.image.load(BULLET_IMG_PATH).convert_alpha(),
+                                                   (self.screen_width // 120, self.screen_width // 120 * 18 // 10))
 
         self.player = player
-        self.all_sprites_list = all_sprites_list
-        self.asteroid_list = asteroid_list
-        self.bullet_list = bullet_list
+        self.asteroid_list = pygame.sprite.Group()
+        self.bullet_list = pygame.sprite.Group()
+        self.explosion_list = pygame.sprite.Group()
         
         self.score = 0
+        self.seconds_before_next_call = None
+        self.last_record_time = None
+
+    @property
+    def screen_width(self):
+        return self.screen.get_width()
+
+    @property
+    def screen_height(self):
+        return self.screen.get_height()
+
+    @property
+    def radius(self):
+        return math.sqrt((self.screen_width / 2) ** 2 + self.screen_height ** 2)
 
     def draw_screen(self):
 
         self.screen.fill(WHITE)
         self.screen.blit(pygame.transform.scale(background, (self.screen_width, self.screen_height)), (0, 0))
-        self.all_sprites_list.draw(self.screen)
+
+        self.screen.blit(self.player.image, self.player.rect)
+        self.bullet_list.draw(self.screen)
+        self.asteroid_list.draw(self.screen)
+        self.explosion_list.draw(self.screen)
 
         score_font = pygame.font.SysFont("serif", self.screen_width // 30)
         display_text("Score: %d" % self.score, score_font, WHITE, self.screen_width / 15, self.screen_height / 30)
 
         pygame.display.flip()
 
-    def generate_asteroids(self, radius, num, last_record_time, interval):
+    def get_position_on_screen_edge(self, angle):
+        radius = math.sqrt((self.screen_width / 2) ** 2 + self.screen_height ** 2)
+        pos_x = radius * math.cos(math.radians(angle))
+        pos_y = radius * math.sin(math.radians(angle))
+
+        if pos_x >= 0:
+            pos_x = min(pos_x, self.screen_width / 2) + self.screen_width / 2
+        else:
+            pos_x = max(pos_x, -self.screen_width / 2) + self.screen_width / 2
+
+        pos_y = self.screen_height - min(pos_y, self.screen_height)
+
+        return pos_x, pos_y
+
+    def generate_asteroid(self, speed, position, angle):
+        return Asteroid(position, speed, angle, self.screen_width, self.screen_height, self.asteroid_image)
+
+    def generate_sprite_with_random_speed_and_angle_on_screen_edge(
+            self,
+            speed_mean,
+            speed_variance,
+            angle_mean,
+            angle_variance
+    ):
+        vel = Vector2(0, -np.random.normal(size=1, loc=speed_mean, scale=speed_variance))
+        angle = np.random.normal(size=1, loc=angle_mean, scale=angle_variance)
+        vel.rotate_ip(-angle + 270)
+
+        position = self.get_position_on_screen_edge(angle)
+        return self.generate_asteroid(vel, position, angle)
+
+    def generate_sprite_with_a_random_frequency(self, lam, *args):
+
+        if self.seconds_before_next_call is None:
+            self.seconds_before_next_call = np.random.poisson(lam)
 
         curr_record_time = pygame.time.get_ticks()
-        if curr_record_time - last_record_time >= interval:
 
-            for i in range(num):
-                x = np.random.normal(size=1, loc=radius * math.cos(math.radians(self.player.angle)), scale=70)
-                y = np.random.normal(size=1, loc=radius * math.sin(math.radians(self.player.angle)), scale=70)
-
-                if x >= 0:
-                    x = min(x, self.screen_width / 2) + self.screen_width / 2
-                else:
-                    x = max(x, -self.screen_width / 2) + self.screen_width / 2
-
-                y = self.screen_height - min(y, self.screen_height)
-
-                asteroid = Asteroid(x, y, self.player.angle, self.screen_width, self.screen_height, self.asteroid_image)
-                self.asteroid_list.add(asteroid)
-                self.all_sprites_list.add(asteroid)
-
-            return curr_record_time
-        return last_record_time
+        if curr_record_time - self.last_record_time >= self.seconds_before_next_call:
+            self.last_record_time = curr_record_time
+            self.seconds_before_next_call = None
+            return self.generate_sprite_with_random_speed_and_angle_on_screen_edge(*args)
 
     def check_hit_update_score(self):
 
@@ -249,19 +310,24 @@ class SpaceshipShooter:
             asteroid_hit_list = pygame.sprite.spritecollide(bullet, self.asteroid_list, True)
 
             for asteroid in asteroid_hit_list:
-                expl = Explosion((asteroid.rect.center[0], asteroid.rect.center[1]))
-                self.all_sprites_list.add(expl)
+                exp = Explosion((asteroid.rect.center[0], asteroid.rect.center[1]))
+                self.explosion_list.add(exp)
 
                 self.score += 1
                 print(self.score)
 
-            if asteroid_hit_list != []:
+            if len(asteroid_hit_list) is not 0:
                 bullet.kill()
+
+    def update_all_sprites(self):
+        self.player.update()
+        self.explosion_list.update()
+        self.asteroid_list.update()
+        self.bullet_list.update()
 
     def spaceship_game_loop(self):
 
-        last_record_time = pygame.time.get_ticks()
-        radius = math.sqrt((self.screen_width / 2) ** 2 + self.screen_height ** 2)
+        self.last_record_time = pygame.time.get_ticks()
 
         while True:
 
@@ -273,10 +339,11 @@ class SpaceshipShooter:
                     if event.key == pygame.K_LEFT:
                         if self.player.angle < 180:
                             self.player.angle_speed = 10
-
                     elif event.key == pygame.K_RIGHT:
                         if self.player.angle > 0:
                             self.player.angle_speed = -10
+                    elif event.key == pygame.K_p:
+                        pause(self.screen_width, self.screen_height)
 
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT:
@@ -284,19 +351,17 @@ class SpaceshipShooter:
                     elif event.key == pygame.K_RIGHT:
                         self.player.angle_speed = 0
                     elif event.key == pygame.K_SPACE:
-                        vel = -radius//100
+                        vel = -self.radius//150
                         bullet = Bullet(self.player, self.bullet_image, vel)
-                        self.all_sprites_list.add(bullet)
                         self.bullet_list.add(bullet)
 
                 elif event.type == pygame.VIDEORESIZE:
                     self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-                    self.screen_width = event.w
-                    self.screen_height = event.h
+
                     radius = math.sqrt((self.screen_width / 2) ** 2 + self.screen_height ** 2)
 
                     new_player_image = pygame.transform.scale(pygame.image.load(SPACESHIP_IMG_PATH).convert_alpha(),
-                                                              (self.screen_width // 20, self.screen_width // 20 * 7 // 4))
+                                                              (self.screen_width // 20, self.screen_width // 80 * 7))
 
                     player.redraw(new_player_image, (self.screen_width / 2, self.screen_height / 22 * 20))
 
@@ -304,47 +369,44 @@ class SpaceshipShooter:
                                                                  (self.screen_width // 25, self.screen_width // 25))
 
                     self.bullet_image = pygame.transform.scale(pygame.image.load(BULLET_IMG_PATH).convert_alpha(),
-                                                               (self.screen_width // 120, self.screen_width // 120 * 18 // 10))
+                                                               (self.screen_width // 120, self.screen_width // 200 * 3))
 
                     for asteroid in self.asteroid_list:
-                        asteroid.redraw(self.asteroid_image)
+                        new_vel = Vector2(0, -np.random.normal(size=1, loc=radius // 150, scale=1))
+                        new_vel.rotate_ip(-asteroid.angle + 270)
+                        asteroid.redraw(self.asteroid_image, new_vel, self.screen_width, self.screen_height)
                     for bullet in self.bullet_list:
-                        new_vel = -radius//100
+                        new_vel = -self.radius//150
                         bullet.redraw(self.bullet_image, new_vel)
 
-            last_record_time = self.generate_asteroids(radius, 3, last_record_time, asteroids_generate_interval)
+            asteroid = self.generate_sprite_with_a_random_frequency(1500, self.radius//170, 1, self.player.angle, 10)
+
+            if asteroid is not None:
+                self.asteroid_list.add(asteroid)
 
             self.check_hit_update_score()
 
-            self.all_sprites_list.update()
+            self.update_all_sprites()
 
             self.draw_screen()
 
 
-screen, screen_width, screen_height = draw_game_window(600, 600)
-pygame.display.set_caption("Spaceship Game")
-play, screen, screen_width, screen_height = menu(screen, screen_width, screen_height, "Spaceship Shooter")
+if __name__ == '__main__':
 
+    screen, screen_width, screen_height = draw_game_window(600, 600)
+    pygame.display.set_caption("Spaceship Game")
+    play, screen, screen_width, screen_height = menu(screen, screen_width, screen_height, "Spaceship Shooter")
 
-background = pygame.image.load(BACKGROUND_IMG_PATH)
-asteroids_generate_interval = 3000
-player_image = pygame.transform.scale(pygame.image.load(SPACESHIP_IMG_PATH).convert_alpha(),
-                                      (screen_width // 20, screen_width // 20 * 7 // 4))
-asteroid_image = pygame.transform.scale(pygame.image.load(ASTEROID_IMG_PATH).convert_alpha(),
-                                        (screen_width // 25, screen_width // 25))
-bullet_image = pygame.transform.scale(pygame.image.load(BULLET_IMG_PATH).convert_alpha(),
-                                      (screen_width // 120, screen_width // 120 * 18 // 10))
+    background = pygame.image.load(BACKGROUND_IMG_PATH)
+    asteroids_generate_interval = 3000
+    player_image = pygame.transform.scale(pygame.image.load(SPACESHIP_IMG_PATH).convert_alpha(),
+                                          (screen_width // 20, screen_width // 20 * 7 // 4))
 
+    if play:
+        player = Player(player_image, (screen_width / 2, screen_height / 22 * 20))
+        space_shooter = SpaceshipShooter(screen, player)
+        space_shooter.spaceship_game_loop()
 
-if play:
-    all_sprites_list = pygame.sprite.Group()
-    asteroid_list = pygame.sprite.Group()
-    bullet_list = pygame.sprite.Group()
+    else:
+        quit_game()
 
-    player = Player(player_image, (screen_width / 2, screen_height / 22 * 20))
-    all_sprites_list.add(player)
-    space_shooter = SpaceshipShooter(screen, screen_width, screen_height, player, all_sprites_list, asteroid_list,
-                                     bullet_list, bullet_image, asteroid_image)
-    space_shooter.spaceship_game_loop()
-else:
-    quit_game()
