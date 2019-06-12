@@ -150,13 +150,14 @@ class Player(pygame.sprite.Sprite):
 
 class Asteroid(pygame.sprite.Sprite):
 
-    def __init__(self, center, vel, angle, screen_width, screen_height, asteroid_image):
+    def __init__(self, center, vel, angle, screen_width, screen_height, asteroid_image, image_index):
         super().__init__()
 
         self.image = asteroid_image.copy()
         self.rect = self.image.get_rect(center=center)
         self.vel = vel
         self.angle = angle
+        self.image_index = image_index
 
         self.boundary_w = screen_width
         self.boundary_h = screen_height
@@ -173,11 +174,16 @@ class Asteroid(pygame.sprite.Sprite):
             self.kill()
 
     def redraw(self, new_image, new_vel, new_screen_width, new_screen_height):
+        width_proportion = self.rect.center[0] / self.boundary_w
+        height_proportion = self.rect.center[1] / self.boundary_h
+
         self.image = new_image.copy()
-        # self.original_image = self.image
+        self.original_image = new_image.copy()
         self.vel = new_vel
         self.boundary_w = new_screen_width
         self.boundary_h = new_screen_height
+
+        self.rect.center = (width_proportion * self.boundary_w, height_proportion * self.boundary_h)
 
     def rotate(self):
 
@@ -294,7 +300,7 @@ class SpaceshipShooter:
         asteroid_image = pygame.transform.scale(self.asteroid_image[num],
                                                 (self.screen_width // scale_of_asteroid_image[0],
                                                  self.screen_width // scale_of_asteroid_image[1]))
-        asteroid = Asteroid(position, speed, angle, self.screen_width, self.screen_height, asteroid_image)
+        asteroid = Asteroid(position, speed, angle, self.screen_width, self.screen_height, asteroid_image, num)
         self.asteroid_list.add(asteroid)
 
     def generate_sprite_with_random_speed_and_angle_on_screen_edge(
@@ -381,11 +387,13 @@ class SpaceshipShooter:
                                               self.screen_height * player_relative_position[1]))
 
         for asteroid in self.asteroid_list:
-            new_image = pygame.transform.scale(asteroid.image, (self.screen_width // scale_of_asteroid_image[0],
-                                                                self.screen_width // scale_of_asteroid_image[1]))
+            asteroid_image = pygame.transform.scale(self.asteroid_image[asteroid.image_index],
+                                                    (self.screen_width // scale_of_asteroid_image[0],
+                                                     self.screen_width // scale_of_asteroid_image[1]))
+
             new_vel = Vector2(0, -self.radius // scale_of_asteroid_vel)
             new_vel.rotate_ip(-asteroid.angle + 270)
-            asteroid.redraw(new_image, new_vel, self.screen_width, self.screen_height)
+            asteroid.redraw(asteroid_image, new_vel, self.screen_width, self.screen_height)
 
         for bullet in self.bullet_list:
             new_vel = -self.radius // scale_of_bullet_vel
@@ -419,7 +427,7 @@ class SpaceshipShooter:
                             if self.counter_clockwise is not True:
                                 self.counter_clockwise = True
                                 self.turns_done = self.turns_done + 1
-                                print("You have done %d turns. Congrats" % self.turns_done)
+                                # print("You have done %d turns. Congrats" % self.turns_done)
 
                         if self.player.angle > 0:
                             self.player.angle_speed = -5
@@ -451,10 +459,11 @@ class SpaceshipShooter:
 
             button_pause = draw_button(self.screen, "Pause", self.screen_width / 15 * 12, self.screen_height / 40,
                                        self.screen_width // 7, self.screen_height // 20, BLUE, BRIGHT_BLUE)
+
             if button_pause:
                 pause(self.screen_width, self.screen_height)
 
-            if self.turns_done > 20:
+            if self.turns_done > 10:
                 print("Congratulations! You finish the exercise!")
                 quit_game()
 
