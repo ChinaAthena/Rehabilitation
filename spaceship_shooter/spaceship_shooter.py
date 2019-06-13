@@ -194,7 +194,7 @@ class Asteroid(pygame.sprite.Sprite):
 
 class Bullet(pygame.sprite.Sprite):
 
-    def __init__(self, player, bullet_image, vel):
+    def __init__(self, player, bullet_image, vel, screen_width, screen_height):
         super().__init__()
         self.angle = player.angle
         self.image = pygame.transform.rotate(bullet_image.copy(), self.angle - 90)
@@ -203,16 +203,27 @@ class Bullet(pygame.sprite.Sprite):
         self.vel = Vector2(0, vel)
         self.vel.rotate_ip(-self.angle + 90)
 
+        self.boundary_w = screen_width
+        self.boundary_h = screen_height
+
     def update(self):
 
         self.rect = self.rect.move(self.vel)
         if self.rect.y < -10:
             self.kill()
 
-    def redraw(self, new_image, new_vel):
+    def redraw(self, new_image, new_vel, new_screen_width, new_screen_height):
+        width_proportion = self.rect.center[0] / self.boundary_w
+        height_proportion = self.rect.center[1] / self.boundary_h
+
         self.image = pygame.transform.rotate(new_image.copy(), self.angle - 90)
         self.vel = Vector2(0, new_vel)
         self.vel.rotate_ip(-self.angle + 90)
+
+        self.boundary_w = new_screen_width
+        self.boundary_h = new_screen_height
+
+        self.rect.center = (width_proportion * self.boundary_w, height_proportion * self.boundary_h)
 
 
 class Explosion(pygame.sprite.Sprite):
@@ -349,7 +360,7 @@ class SpaceshipShooter:
             bullet_image = pygame.transform.scale(self.bullet_image,
                                                   (self.screen_width // scale_of_bullet_image[0],
                                                    self.screen_width // scale_of_bullet_image[1]))
-            bullet = Bullet(self.player, bullet_image, -vel)
+            bullet = Bullet(self.player, bullet_image, -vel, self.screen_width, self.screen_height)
             self.bullet_list.add(bullet)
 
     def check_hit_update_score(self):
@@ -397,7 +408,7 @@ class SpaceshipShooter:
 
         for bullet in self.bullet_list:
             new_vel = -self.radius // scale_of_bullet_vel
-            bullet.redraw(bullet_image, new_vel)
+            bullet.redraw(bullet_image, new_vel, self.screen_width, self.screen_height)
 
     def spaceship_game_loop(self):
 
