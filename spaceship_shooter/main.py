@@ -1,6 +1,8 @@
 from spaceship_shooter.Spaceship_Shooter import *
+from spaceship_shooter.main_function import *
 
 if __name__ == '__main__':
+    pygame.init()
 
     screen = initialize_game_window(700, 600)
 
