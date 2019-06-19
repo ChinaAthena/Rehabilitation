@@ -1,7 +1,9 @@
+import pygame
 import random
 from pygame.math import Vector2
 import numpy as np
 import math
+from spaceship_shooter.main_function import draw_text, quit_game, draw_button, pause_screen
 from spaceship_shooter.constant import *
 
 
@@ -119,8 +121,9 @@ class Explosion(pygame.sprite.Sprite):
 
 class SpaceshipShooterGame:
 
-    def __init__(self, screen, player_image, asteroid_image, bullet_image):
+    def __init__(self, screen, background, player_image, asteroid_image, bullet_image):
         self.screen = screen
+        self.background = background
 
         self.player_image = player_image
         self.asteroid_image = asteroid_image
@@ -144,6 +147,8 @@ class SpaceshipShooterGame:
         self.last_record_time_for_asteroids = None
         self.last_record_time_for_bullets = None
         self.counter_clockwise = True
+        self.blink = 0
+        self.alpha = 255
 
     @property
     def screen_width(self):
@@ -158,12 +163,12 @@ class SpaceshipShooterGame:
         return math.sqrt((self.screen_width / 2) ** 2 + self.screen_height ** 2)
 
     def draw_screen(self):
-        self.screen.blit(pygame.transform.scale(background, (self.screen_width, self.screen_height)), (0, 0))
+        self.screen.blit(pygame.transform.scale(self.background, (self.screen_width, self.screen_height)), (0, 0))
 
-        self.screen.blit(self.player.image, self.player.rect)
         self.bullet_list.draw(self.screen)
         self.asteroid_list.draw(self.screen)
         self.explosion_list.draw(self.screen)
+        self.screen.blit(self.player.image, self.player.rect)
 
         score_font = pygame.font.SysFont("serif", self.screen_width // 30)
         draw_text(self.screen, "Score: %d" % self.score, score_font, WHITE, self.screen_width / 15, self.screen_height / 30)
@@ -182,7 +187,7 @@ class SpaceshipShooterGame:
         return pos_x, pos_y
 
     def generate_asteroid_with_random_image(self, speed, position):
-        num = random.randrange(3)
+        num = random.randrange(len(self.asteroid_image))
         image = pygame.transform.scale(self.asteroid_image[num],
                                        (round(self.screen_width * scale_of_asteroid_image[0]),
                                         round(self.screen_width * scale_of_asteroid_image[1])))
@@ -284,6 +289,23 @@ class SpaceshipShooterGame:
         for bullet in self.bullet_list:
             bullet.redraw(new_bullet_image, self.screen_width, self.screen_height)
 
+    def check_hit_blink_image(self):
+
+        asteroid_hit_list = pygame.sprite.spritecollide(self.player, self.asteroid_list, True)
+
+        if len(asteroid_hit_list) is not 0:
+            self.blink = 16
+            self.score -= 1
+
+        if self.blink:
+            self.blink -= 1
+            if self.alpha == 255:
+                self.alpha = 0
+            else:
+                self.alpha = 255
+            self.player.image.set_alpha(self.alpha)
+            pygame.time.delay(20)
+
     def spaceship_game_loop(self):
 
         self.last_record_time_for_asteroids = pygame.time.get_ticks()
@@ -325,7 +347,19 @@ class SpaceshipShooterGame:
                         self.player.angle_speed = 0
 
                 elif event.type == pygame.VIDEORESIZE:
-                    self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+                    screen_width = event.w
+                    screen_height = event.h
+
+                    if screen_width < 400:
+                        screen_width = 400
+                    if screen_height < 300:
+                        screen_height = 300
+                    if screen_width < 1/2 * screen_height:
+                        screen_width = 1/2 * screen_height
+                    if screen_width > 2 * screen_height:
+                        screen_width = 2 * screen_height
+
+                    self.screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
                     self.redraw_all_sprites()
 
             self.generate_asteroids_with_a_random_frequency(lam_of_generating_asteroid,
@@ -339,6 +373,8 @@ class SpaceshipShooterGame:
             self.check_hit_update_score()
 
             self.update_all_sprites()
+
+            self.check_hit_blink_image()
 
             self.draw_screen()
 
@@ -356,4 +392,3 @@ class SpaceshipShooterGame:
                 asteroid.rotate()
 
             pygame.display.flip()
-

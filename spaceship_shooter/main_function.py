@@ -1,18 +1,13 @@
 from spaceship_shooter.constant import *
+import pygame
 
 
 def load_transparent_images(path, is_transparent=True):
+    image = pygame.image.load(path).convert()
+
     if is_transparent:
-        image = pygame.image.load(path).convert_alpha()
-    else:
-        image = pygame.image.load(path)
-
+        image.set_colorkey(BLACK)
     return image
-
-
-# set_alpha() for the spaceship to blink
-def blink_player(transpancy):
-    pass
 
 
 def initialize_game_window(width=None, height=None):
@@ -68,9 +63,19 @@ def menu(screen, headline):
             if event.type == pygame.QUIT:
                 quit_game()
             elif event.type == pygame.VIDEORESIZE:
-                screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
                 screen_width = event.w
                 screen_height = event.h
+
+                if screen_width < 400:
+                    screen_width = 400
+                if screen_height < 300:
+                    screen_height = 300
+                if screen_width < 1 / 2 * screen_height:
+                    screen_width = 1 / 2 * screen_height
+                if screen_width > 2 * screen_height:
+                    screen_width = 2 * screen_height
+
+                screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
 
         headline_font = pygame.font.SysFont("serif", screen_width // 10)
         draw_text(screen, headline, headline_font, BLACK, (screen_width / 2), (screen_height / 2))

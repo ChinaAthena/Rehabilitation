@@ -1,5 +1,3 @@
-import pygame
-
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 BRIGHT_RED = (255, 0, 0)
@@ -12,7 +10,7 @@ BLUE = (0, 0, 128)
 ASSETS_DIR = "../assets/"
 BACKGROUND_IMG_PATH = ASSETS_DIR + "background.png"
 SPACESHIP_IMG_PATH = ASSETS_DIR + "spaceship.png"
-ASTEROID_IMG_PATH = [ASSETS_DIR + "asteroid0%d.png" % i for i in range(3)]
+ASTEROID_IMG_PATH = [ASSETS_DIR + "asteroid0%d.png" % i for i in range(2)]
 BULLET_IMG_PATH = ASSETS_DIR + "bullet.png"
 EXPLOSION_IMG_PATHS = [ASSETS_DIR+"explosions/regularExplosion0%d.png" % i for i in range(9)]
 
@@ -25,5 +23,3 @@ scale_of_asteroid_vel = 0.00588
 scale_of_bullet_vel = 0.00667
 angle_variance_of_asteroid = 0.01
 player_relative_position = [0.5, 0.9]
-
-background = pygame.image.load(BACKGROUND_IMG_PATH)
