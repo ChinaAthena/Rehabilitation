@@ -1,4 +1,4 @@
-from spaceship_shooter.constant import *
+import spaceship_shooter.constant as cons
 import pygame
 
 
@@ -6,7 +6,7 @@ def load_transparent_images(path, is_transparent=True):
     image = pygame.image.load(path).convert()
 
     if is_transparent:
-        image.set_colorkey(BLACK)
+        image.set_colorkey(cons.BLACK)
     return image
 
 
@@ -42,7 +42,7 @@ def draw_button(surface, message, pos_x, pos_y, width, height, inactive_color, a
     else:
         pygame.draw.rect(surface, inactive_color, (pos_x, pos_y, width, height))
 
-    draw_text(surface, message, button_font, WHITE, (pos_x + (width / 2)), (pos_y + (height / 2)))
+    draw_text(surface, message, button_font, cons.WHITE, (pos_x + (width / 2)), (pos_y + (height / 2)))
 
     return False
 
@@ -57,7 +57,7 @@ def menu(screen, headline):
     screen_height = screen.get_height()
 
     while True:
-        screen.fill(WHITE)
+        screen.fill(cons.WHITE)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -78,13 +78,13 @@ def menu(screen, headline):
                 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
 
         headline_font = pygame.font.SysFont("serif", screen_width // 10)
-        draw_text(screen, headline, headline_font, BLACK, (screen_width / 2), (screen_height / 2))
+        draw_text(screen, headline, headline_font, cons.BLACK, (screen_width / 2), (screen_height / 2))
 
         button_font = pygame.font.SysFont("serif", screen_height // 30)
         button_play = draw_button(screen, "Go!", screen_width / 7 * 2, screen_height / 3 * 2, screen_width // 7,
-                                  screen_height // 20, GREEN, BRIGHT_GREEN, button_font)
+                                  screen_height // 20, cons.GREEN, cons.BRIGHT_GREEN, button_font)
         button_quit = draw_button(screen, "Quit :(", screen_width / 7 * 4, screen_height / 3 * 2, screen_width // 7,
-                                  screen_height // 20, MAROON, BRIGHT_RED, button_font)
+                                  screen_height // 20, cons.MAROON, cons.BRIGHT_RED, button_font)
 
         pygame.display.update()
 
@@ -113,11 +113,12 @@ def pause_screen(screen):
                 elif event.key == pygame.K_q:
                     quit_game()
 
-        screen.fill(WHITE)
+        screen.fill(cons.WHITE)
 
         larger_font = pygame.font.SysFont("serif", screen_width // 10)
-        draw_text(screen, "Paused", larger_font, BLACK, (screen_width / 2), (screen_height / 2))
+        draw_text(screen, "Paused", larger_font, cons.BLACK, (screen_width / 2), (screen_height / 2))
         smaller_font = pygame.font.SysFont("serif", screen_width // 30)
-        draw_text(screen, "Press C to continue or Q to quit.", smaller_font, BLACK, (screen_width / 4), (screen_height / 4))
+        draw_text(screen, "Press C to continue or Q to quit.", smaller_font, cons.BLACK,
+                  (screen_width / 4), (screen_height / 4))
 
         pygame.display.update()
