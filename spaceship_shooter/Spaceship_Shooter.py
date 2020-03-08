@@ -3,9 +3,9 @@ import random
 from pygame.math import Vector2
 import numpy as np
 import math
-from spaceship_shooter.main_function import draw_text, quit_game, draw_button, pause_screen
-import spaceship_shooter.constant as cons
-
+from main_function import draw_text, quit_game, draw_button, pause_screen
+import constant as cons
+import Leap, sys
 
 class Player(pygame.sprite.Sprite):
 
@@ -21,11 +21,11 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
 
-        if self.angle_speed:
+        # if self.angle_speed:
 
-            self.angle += self.angle_speed
-            self.image = pygame.transform.rotate(self.original_image, self.angle - 90)
-            self.rect = self.image.get_rect(center=self.rect.center)
+            # self.angle += self.angle_speed
+        self.image = pygame.transform.rotate(self.original_image, self.angle - 90)
+        self.rect = self.image.get_rect(center=self.rect.center)
 
     def redraw(self, new_image, new_center):
         self.image = new_image.copy()
@@ -314,41 +314,19 @@ class SpaceshipShooterGame:
 
         self.last_record_time_for_asteroids = pygame.time.get_ticks()
         self.last_record_time_for_bullets = pygame.time.get_ticks()
+        controller = Leap.Controller()
 
         while True:
             self.screen.fill(cons.WHITE)
 
+            frame = controller.frame()
+            hands = frame.hands
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    quit_game()
-
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_LEFT:
-                        if self.player.angle >= 180:
-                            if self.counter_clockwise is True:
-                                self.counter_clockwise = False
-                                self.turns_done = self.turns_done + 1
-                                print("You have done %d turns. Congrats" % self.turns_done)
-
-                        if self.player.angle < 180:
-                            self.player.angle_speed = 5
-
-                    elif event.key == pygame.K_RIGHT:
-                        if self.player.angle <= 0:
-                            if self.counter_clockwise is False:
-                                self.counter_clockwise = True
-                                self.turns_done = self.turns_done + 1
-                                print("You have done %d turns. Congrats" % self.turns_done)
-
-                        if self.player.angle > 0:
-                            self.player.angle_speed = -5
-
-                elif event.type == pygame.KEYUP:
-                    if event.key == pygame.K_LEFT:
-                        self.player.angle_speed = 0
-
-                    elif event.key == pygame.K_RIGHT:
-                        self.player.angle_speed = 0
+                    time = pygame.time.get_ticks() * 0.001
+                    return [self.turns_done, round(time)]
+                    # quit_game()
 
                 elif event.type == pygame.VIDEORESIZE:
                     screen_width = event.w
@@ -365,6 +343,29 @@ class SpaceshipShooterGame:
 
                     self.screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
                     self.redraw_all_sprites()
+
+            if not hands.is_empty:
+                first_hand = hands[0]
+                yaw = first_hand.direction.yaw
+                # print("----yaw-----")
+                # print(yaw * -90 + 90)
+                current_angle = yaw * -90 + 90
+
+                if current_angle >= 180:
+                    if self.counter_clockwise is True:
+                        self.counter_clockwise = False
+                        self.turns_done = self.turns_done + 1
+                        print("You have done %d turns. Congrats" % self.turns_done)
+                    current_angle = 180
+                elif current_angle <= 0:
+                    if self.counter_clockwise is False:
+                        self.counter_clockwise = True
+                        self.turns_done = self.turns_done + 1
+                        print("You have done %d turns. Congrats" % self.turns_done)
+                    current_angle = 0
+
+                self.player.angle = current_angle
+                # time.sleep(1)
 
             self.check_hit_blink_image()
 
@@ -395,4 +396,5 @@ class SpaceshipShooterGame:
             for asteroid in self.asteroid_list:
                 asteroid.rotate()
 
-            pygame.display.flip()
+            pygame.display.update()
+

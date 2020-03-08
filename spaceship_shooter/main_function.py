@@ -1,4 +1,4 @@
-import spaceship_shooter.constant as cons
+import constant as cons
 import pygame
 
 
