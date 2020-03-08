@@ -8,7 +8,7 @@ from datetime import date
 
 if __name__ == '__main__':
     # Your Account SID from twilio.com/console
-    account_sid = "*"
+    account_sid = "AC82b1c13b2ef1aec55246fca1d131a08c"
     # Your Auth Token from twilio.com/console
     auth_token = "*"
 
@@ -36,12 +36,11 @@ if __name__ == '__main__':
         seconds = data[1]
         score = data[2]
         ScorevsTime = score / seconds
-        client = Client(account_sid, auth_token)
 
         server = 'mysqlrehabilitationr.database.windows.net'
         database = 'Patients'
         username = 'azureuser'
-        password = '*'
+        password = 'Azure12345'
         driver = '{ODBC Driver 17 for SQL Server}'
         cnxn = pyodbc.connect(
             'DRIVER=' + driver + ';SERVER=' + server + ';PORT=1433;DATABASE=' + database + ';UID=' + username + ';PWD=' + password)
@@ -63,12 +62,14 @@ if __name__ == '__main__':
             it += 1
             row = cursor.fetchone()
 
-        avg_score /= it
-        avg_time /= it
-        avg_turn /= it
-        avg_score_vs_time /= it
+        avg_score = round(avg_score/it, 2)
+        avg_time = round(avg_time/it, 2)
+        avg_turn = round(avg_turn/it, 2)
+        avg_score_vs_time = round(avg_score_vs_time/it, 2)
         perform_improved = round(((seconds/turns - avg_time/avg_turn) / (seconds/turns)) * 100)
 
+
+        client = Client(account_sid, auth_token)
         message = client.messages.create(
             to="+12137132689",
             from_="+12132779054",
@@ -81,7 +82,7 @@ if __name__ == '__main__':
                 perform_improved) + "%. Good job!")
 
         today = str(date.today())
-        command = "INSERT INTO dbo.Patientinfos ([TrialId], [Date], [Score], [TimeElapsed], [NumOfTurn], [ScorevsTime]) VALUES ( " + str(it + 1) + ", N'" + today + "', N'" + str(score) + "', N'" + str(seconds) + "', N'" + str(turns) + "', N'" + str(round(ScorevsTime), 2) + "');"
+        command = "INSERT INTO dbo.Patientinfos ([TrialId], [Date], [Score], [TimeElapsed], [NumOfTurn], [ScorevsTime]) VALUES ( " + str(it + 1) + ", N'" + today + "', N'" + str(score) + "', N'" + str(seconds) + "', N'" + str(turns) + "', N'" + str(round(ScorevsTime, 2)) + "');"
         cursor.execute(command)
         cnxn.commit()
     else:
