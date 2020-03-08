@@ -7,9 +7,9 @@ from twilio.rest import Client
 
 if __name__ == '__main__':
     # Your Account SID from twilio.com/console
-    account_sid = "AC82b1c13b2ef1aec55246fca1d131a08c"
+    account_sid = "*"
     # Your Auth Token from twilio.com/console
-    auth_token = "9c729f510477e860d22f57faf28b4a5b"
+    auth_token = "*"
 
     pygame.init()
 
