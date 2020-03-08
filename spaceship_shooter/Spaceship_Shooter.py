@@ -332,7 +332,7 @@ class SpaceshipShooterGame:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     time = pygame.time.get_ticks() * 0.001
-                    return [self.turns_done, round(time)]
+                    return [self.turns_done, round(time), self.score]
 
                 elif event.type == pygame.VIDEORESIZE:
                     screen_width = event.w
@@ -401,11 +401,15 @@ class SpaceshipShooterGame:
                     while paused:
                         for event in pygame.event.get():
                             if event.type == pygame.QUIT:
-                                quit_game()
+                                # quit_game()
+                                time = pygame.time.get_ticks() * 0.001
+                                return [self.turns_done, round(time), self.score]
 
                             if event.type == pygame.KEYDOWN:
                                 if event.key == pygame.K_q:
-                                    quit_game()
+                                    # quit_game()
+                                    time = pygame.time.get_ticks() * 0.001
+                                    return [self.turns_done, round(time), self.score]
 
                         frame = controller.frame()
                         hands = frame.hands
