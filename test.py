@@ -39,9 +39,9 @@ if __name__ == '__main__':
         # tools = frame.tools
         if not hands.is_empty:
             first_hand = hands[0]
-            yaw = first_hand.direction.yaw
-            print("----yaw-----")
-            print(yaw * -90 + 90)
+            roll = first_hand.direction.roll
+            print("----roll-----")
+            print(roll)
             time.sleep(1)
             # print(first_hand)
             # print(hands)

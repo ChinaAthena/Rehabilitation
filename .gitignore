@@ -3,4 +3,5 @@ bin/
 test.py
 lib/
 Pipfile*
-*.DS_Store
+*.DS_Store*
+spaceship_shooter/__pycache__/Spaceship_Shooter.cpython-37.pyc

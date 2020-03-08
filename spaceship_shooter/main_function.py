@@ -1,6 +1,6 @@
 import constant as cons
 import pygame
-
+import Leap, sys
 
 def load_transparent_images(path, is_transparent=True):
     image = pygame.image.load(path).convert()
@@ -62,6 +62,9 @@ def menu(screen, headline):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit_game()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    return True, screen
             elif event.type == pygame.VIDEORESIZE:
                 screen_width = event.w
                 screen_height = event.h
@@ -95,7 +98,7 @@ def menu(screen, headline):
 
 
 # make this pause_screen a class
-def pause_screen(screen):
+def pause_screen(screen, frame):
     screen_width = screen.get_width()
     screen_height = screen.get_height()
 
@@ -107,11 +110,20 @@ def pause_screen(screen):
                 quit_game()
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_c:
-                    paused = False
-
-                elif event.key == pygame.K_q:
+                if event.key == pygame.K_q:
                     quit_game()
+
+                # elif event.key == pygame.K_c:
+                #     paused = False
+
+        hands = frame.hands
+
+        if not hands.is_empty:
+            first_hand = hands[0]
+            pitch = first_hand.direction.pitch
+            print(pitch)
+            if pitch < 1:
+                paused = False
 
         screen.fill(cons.WHITE)
 

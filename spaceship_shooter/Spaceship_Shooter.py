@@ -322,11 +322,17 @@ class SpaceshipShooterGame:
             frame = controller.frame()
             hands = frame.hands
 
+            # if not hands.is_empty:
+            #     first_hand = hands[0]
+            #     roll = first_hand.direction.roll
+            #     if roll < -2:
+            #         time = pygame.time.get_ticks() * 0.001
+            #         return [self.turns_done, round(time)]
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     time = pygame.time.get_ticks() * 0.001
                     return [self.turns_done, round(time)]
-                    # quit_game()
 
                 elif event.type == pygame.VIDEORESIZE:
                     screen_width = event.w
@@ -383,12 +389,42 @@ class SpaceshipShooterGame:
 
             self.draw_screen()
 
-            button_font = pygame.font.SysFont("serif", self.screen_height // 30)
-            button_pause = draw_button(self.screen, "Pause", self.screen_width / 15 * 12, self.screen_height / 40,
-                                       self.screen_width // 7, self.screen_height // 20, cons.BLUE, cons.BRIGHT_BLUE, button_font)
+            if not hands.is_empty:
+                first_hand = hands[0]
+                pitch = first_hand.direction.pitch
+                if pitch >= 1:
+                    screen_width = self.screen.get_width()
+                    screen_height = self.screen.get_height()
 
-            if button_pause:
-                pause_screen(self.screen)
+                    paused = True
+
+                    while paused:
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                quit_game()
+
+                            if event.type == pygame.KEYDOWN:
+                                if event.key == pygame.K_q:
+                                    quit_game()
+
+                        frame = controller.frame()
+                        hands = frame.hands
+
+                        if not hands.is_empty:
+                            first_hand = hands[0]
+                            pitch = first_hand.direction.pitch
+                            if pitch < 1:
+                                paused = False
+
+                        self.screen.fill(cons.WHITE)
+
+                        larger_font = pygame.font.SysFont("serif", screen_width // 10)
+                        draw_text(self.screen, "Paused", larger_font, cons.BLACK, (screen_width / 2), (screen_height / 2))
+                        smaller_font = pygame.font.SysFont("serif", screen_width // 30)
+                        draw_text(self.screen, "Press C to continue or Q to quit.", smaller_font, cons.BLACK,
+                                  (screen_width / 4), (screen_height / 4))
+
+                        pygame.display.update()
 
             if self.turns_done > 10:
                 print("Congratulations! You finish the exercise!")
